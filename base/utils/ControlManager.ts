@@ -5,15 +5,20 @@ import {Gamepad as XGamepad, Button, AnyButton} from "../XGamepad";
 const DEFAULT_LOOP_TIME = Phaser.Timer.QUARTER >> 1;
 
 type Control = {
-    button: Button;
+    /** The button that must be pressed */
+    button: AnyButton;
+    /** Callback to call upon button press */
     on_down?: Function;
+    /** Callback to call upon button release */
     on_up?: Function;
+    /** Additionnal params */
     params?: {
         /** Whether to reset the binding set upon press */
         reset_controls?: boolean;
         /** Time between each trigger on button held */
         loop_time?: number;
     };
+    /** Sounds to play upon button press or release */
     sfx?: {up?: string; down?: string};
 };
 
@@ -165,8 +170,11 @@ export class ControlManager {
         };
 
         controls.forEach(control => {
+            const button = control.button;
+            const gamepad_button = this.gamepad.get_button(button);
+
             if (control.on_up) {
-                const b = this.gamepad.get_button(control.button).on_up.add(() => {
+                const b = gamepad_button.on_up.add(() => {
                     if (this.disabled) return;
 
                     if (control.sfx?.up) this.audio.play_se(control.sfx.up);
@@ -179,15 +187,13 @@ export class ControlManager {
                 const loop_time = control.params?.loop_time;
                 const trigger_reset = control.params?.reset_controls;
 
-                const gamepad_button = this.gamepad.get_button(control.button);
-
                 if (loop_time) {
                     const b1 = gamepad_button.on_down.add(event => {
                         if (this.disabled) return;
 
-                        const opposite_button = XGamepad.get_opposite_button(control.button);
-
+                        const opposite_button = XGamepad.get_opposite_button(button);
                         if (opposite_button && this.gamepad.is_down(opposite_button)) {
+                            // Force the release of the opposite button
                             this.gamepad.get_button(opposite_button).is_up = true;
                             this.stop_timers();
                         }
