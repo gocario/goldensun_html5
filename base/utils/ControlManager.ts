@@ -8,7 +8,7 @@ type Control = {
     /** The button that must be pressed */
     button?: AnyButton;
     /** Or an array of buttons that must be pressed, only works with a on_down callback */
-    buttons?: AnyButton[];
+    buttons?: AnyButton | AnyButton[];
     /** Callback to call upon button press */
     on_down?: Function;
     /** Callback to call upon button release */
@@ -172,9 +172,11 @@ export class ControlManager {
         };
 
         controls.forEach(control => {
-            const buttons = control.buttons;
+            // Cast the buttons if it is an array
+            const buttons = control.buttons instanceof Array ? (control.buttons as AnyButton[]) : null;
+
             // Gets the last button of the combo or directly the button itself
-            const button = buttons?.[buttons.length - 1] ?? control.button;
+            const button = buttons?.[buttons.length - 1] ?? (control.buttons as AnyButton) ?? control.button;
             const gamepad_button = this.gamepad.get_button(button);
 
             if (control.on_up) {
