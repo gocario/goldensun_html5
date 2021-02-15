@@ -6,7 +6,9 @@ const DEFAULT_LOOP_TIME = Phaser.Timer.QUARTER >> 1;
 
 type Control = {
     /** The button that must be pressed */
-    button: AnyButton;
+    button?: AnyButton;
+    /** Or an array of buttons that must be pressed, only works with a on_down callback */
+    buttons?: AnyButton[];
     /** Callback to call upon button press */
     on_down?: Function;
     /** Callback to call upon button release */
@@ -170,7 +172,9 @@ export class ControlManager {
         };
 
         controls.forEach(control => {
-            const button = control.button;
+            const buttons = control.buttons;
+            // Gets the last button of the combo or directly the button itself
+            const button = buttons?.[buttons.length - 1] ?? control.button;
             const gamepad_button = this.gamepad.get_button(button);
 
             if (control.on_up) {
@@ -181,6 +185,9 @@ export class ControlManager {
                     control.on_up();
                 });
                 register(b);
+
+                // For every control.buttons on_up
+                //   check for the other control.buttons if they were pressed
             }
 
             if (control.on_down) {
@@ -214,6 +221,9 @@ export class ControlManager {
                 } else {
                     const b = gamepad_button.on_down.add(event => {
                         if (this.disabled) return;
+
+                        // Check if the other combo buttons are already pressed if any
+                        if (buttons?.some(button => this.gamepad.get_button(button).is_up)) return;
 
                         if (trigger_reset) this.reset();
                         if (control.sfx?.down) this.audio.play_se(control.sfx.down);
